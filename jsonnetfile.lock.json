@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "dependencies": [
+    {
+      "source": {
+        "git": {
+          "remote": "https://github.com/grafana/jsonnet-libs.git",
+          "subdir": "ksonnet-util"
+        }
+      },
+      "version": "bcc57718591cba96c4d5fc2064165a1234800693",
+      "sum": "K5Z/AI/0DbXHtcxOq+NAQ0EqW1onhG5aROAIMtFnYew="
+    },
+    {
+      "source": {
+        "git": {
+          "remote": "https://github.com/grafana/loki.git",
+          "subdir": "production/ksonnet/promtail"
+        }
+      },
+      "version": "60bf23d588405a62011c92e937983d930bd8f4b1",
+      "sum": "MOoAhHzLkR7NSqD7ZVqjlcSDNRUz3fVgJQiYM1hd+us="
+    }
+  ],
+  "legacyImports": false
+}
