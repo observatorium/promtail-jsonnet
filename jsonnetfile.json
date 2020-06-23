@@ -1,15 +1,25 @@
 {
-  "version": 1,
-  "dependencies": [
-    {
-      "source": {
-        "git": {
-          "remote": "https://github.com/grafana/loki.git",
-          "subdir": "production/ksonnet/promtail"
-        }
-      },
-      "version": "master"
-    }
-  ],
-  "legacyImports": true
+	"version": 1,
+	"dependencies": [
+		{
+			"source": {
+				"git": {
+					"remote": "https://github.com/grafana/loki.git",
+					"subdir": "production/ksonnet/promtail"
+				}
+			},
+			"version": "master"
+		},
+		{
+			"name": "observatorium",
+			"source": {
+				"git": {
+					"remote": "https://github.com/observatorium/deployments.git",
+					"subdir": "environments/dev"
+				}
+			},
+			"version": "master"
+		}
+	],
+	"legacyImports": true
 }

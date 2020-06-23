@@ -20,6 +20,17 @@
       },
       "version": "60bf23d588405a62011c92e937983d930bd8f4b1",
       "sum": "MOoAhHzLkR7NSqD7ZVqjlcSDNRUz3fVgJQiYM1hd+us="
+    },
+    {
+      "source": {
+        "git": {
+          "remote": "https://github.com/observatorium/deployments.git",
+          "subdir": "environments/dev"
+        }
+      },
+      "version": "ec3acb865afc14a793e6a1651f3ac6404480a9d4",
+      "sum": "fI8Gv6V/PrnDsVIV5j+9W6DA5sIVvUrKThO9v1c9/rA=",
+      "name": "observatorium"
     }
   ],
   "legacyImports": false
