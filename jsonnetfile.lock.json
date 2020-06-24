@@ -8,7 +8,7 @@
           "subdir": "ksonnet-util"
         }
       },
-      "version": "bcc57718591cba96c4d5fc2064165a1234800693",
+      "version": "ee275b168a51a6f6a5e85c802e25e8940a79e285",
       "sum": "K5Z/AI/0DbXHtcxOq+NAQ0EqW1onhG5aROAIMtFnYew="
     },
     {
@@ -18,8 +18,18 @@
           "subdir": "production/ksonnet/promtail"
         }
       },
-      "version": "60bf23d588405a62011c92e937983d930bd8f4b1",
+      "version": "70900be57dd2e18a8c5e7d94dec5268fc607ccc7",
       "sum": "MOoAhHzLkR7NSqD7ZVqjlcSDNRUz3fVgJQiYM1hd+us="
+    },
+    {
+      "source": {
+        "git": {
+          "remote": "https://github.com/ksonnet/ksonnet-lib.git",
+          "subdir": "ksonnet.beta.4"
+        }
+      },
+      "version": "0d2f82676817bbf9e4acf6495b2090205f323b9f",
+      "sum": "ur22hPQq0JAPBxm8hNMcwjumj4MkozDwOKiGZvVMYh4="
     },
     {
       "source": {

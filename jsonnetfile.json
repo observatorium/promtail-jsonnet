@@ -4,6 +4,15 @@
 		{
 			"source": {
 				"git": {
+					"remote": "https://github.com/ksonnet/ksonnet-lib",
+					"subdir": "ksonnet.beta.4"
+				}
+			},
+			"version": "master"
+		},
+		{
+			"source": {
+				"git": {
 					"remote": "https://github.com/grafana/loki.git",
 					"subdir": "production/ksonnet/promtail"
 				}
@@ -11,14 +20,14 @@
 			"version": "master"
 		},
 		{
-			"name": "observatorium",
 			"source": {
 				"git": {
 					"remote": "https://github.com/observatorium/deployments.git",
 					"subdir": "environments/dev"
 				}
 			},
-			"version": "master"
+			"version": "master",
+			"name": "observatorium"
 		}
 	],
 	"legacyImports": true

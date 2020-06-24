@@ -394,8 +394,7 @@ k {
       ]),
 
     manifestYaml(value):: (
-      local f = std.native('manifestYamlFromJson');
-      f(std.toString(value))
+      std.manifestYamlDoc(value)
     ),
 
     resourcesRequests(cpu, memory)::
