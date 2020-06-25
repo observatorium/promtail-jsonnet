@@ -90,7 +90,7 @@ local pt = config + scrape_config {
 
   local daemonSet = k.apps.v1.daemonSet,
   init_container::
-    container.new('promtail_init', $._images.curl) +
+    container.new('promtail-init', $._images.curl) +
     container.withVolumeMounts(volumeMount) +
     container.withCommand([
       '/bin/sh',
@@ -119,6 +119,8 @@ local pt = config + scrape_config {
     daemonSet.new($._config.promtail_pod_name, [$.promtail_container]) +
     daemonSet.mixin.spec.template.spec.withInitContainers($.init_container) +
     daemonSet.mixin.spec.template.spec.withServiceAccount($._config.promtail_cluster_role_name) +
+    daemonSet.mixin.spec.template.spec.withServiceAccount($._config.promtail_cluster_role_name) +
+    daemonSet.mixin.spec.template.spec.withVolumes({ emptyDir: {}, name: 'shared' }) +
     k.util.configVolumeMount($._config.promtail_configmap_name, '/etc/promtail') +
     k.util.hostVolumeMount('varlog', '/var/log', '/var/log') +
     k.util.hostVolumeMount('varlibdockercontainers', $._config.promtail_config.container_root_path + '/containers', $._config.promtail_config.container_root_path + '/containers', readOnly=true),
