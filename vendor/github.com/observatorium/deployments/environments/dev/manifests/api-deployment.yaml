@@ -6,7 +6,7 @@ metadata:
     app.kubernetes.io/instance: observatorium-xyz
     app.kubernetes.io/name: observatorium-api
     app.kubernetes.io/part-of: observatorium
-    app.kubernetes.io/version: master-2020-06-19-v0.1.1-98-g4420ccc
+    app.kubernetes.io/version: master-2020-09-08-v0.1.1-142-g61a908f
   name: observatorium-xyz-observatorium-api
   namespace: observatorium
 spec:
@@ -28,21 +28,21 @@ spec:
         app.kubernetes.io/instance: observatorium-xyz
         app.kubernetes.io/name: observatorium-api
         app.kubernetes.io/part-of: observatorium
-        app.kubernetes.io/version: master-2020-06-19-v0.1.1-98-g4420ccc
+        app.kubernetes.io/version: master-2020-09-08-v0.1.1-142-g61a908f
     spec:
       containers:
       - args:
         - --web.listen=0.0.0.0:8080
         - --web.internal.listen=0.0.0.0:8081
+        - --metrics.read.endpoint=http://observatorium-xyz-thanos-query-frontend.observatorium.svc.cluster.local:9090
+        - --metrics.write.endpoint=http://observatorium-xyz-thanos-receive.observatorium.svc.cluster.local:19291
+        - --log.level=warn
         - --logs.read.endpoint=http://observatorium-xyz-loki-query-frontend-http.observatorium.svc.cluster.local:3100
         - --logs.tail.endpoint=http://observatorium-xyz-loki-querier-http.observatorium.svc.cluster.local:3100
         - --logs.write.endpoint=http://observatorium-xyz-loki-distributor-http.observatorium.svc.cluster.local:3100
-        - --metrics.read.endpoint=http://observatorium-xyz-cortex-query-frontend.observatorium.svc.cluster.local:9090
-        - --metrics.write.endpoint=http://observatorium-xyz-thanos-receive.observatorium.svc.cluster.local:19291
-        - --log.level=warn
         - --rbac.config=/etc/observatorium/rbac.yaml
         - --tenants.config=/etc/observatorium/tenants.yaml
-        image: quay.io/observatorium/observatorium:master-2020-06-19-v0.1.1-98-g4420ccc
+        image: quay.io/observatorium/observatorium:master-2020-09-08-v0.1.1-142-g61a908f
         livenessProbe:
           failureThreshold: 10
           httpGet:
@@ -72,6 +72,7 @@ spec:
           name: tenants
           readOnly: true
           subPath: tenants.yaml
+      serviceAccount: observatorium-xyz-observatorium-api
       volumes:
       - configMap:
           name: observatorium-xyz-observatorium-api

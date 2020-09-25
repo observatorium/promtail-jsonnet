@@ -8,8 +8,8 @@
           "subdir": "ksonnet-util"
         }
       },
-      "version": "ee275b168a51a6f6a5e85c802e25e8940a79e285",
-      "sum": "K5Z/AI/0DbXHtcxOq+NAQ0EqW1onhG5aROAIMtFnYew="
+      "version": "ab0e5d8a62180b52ace18b53bc57c87c2b4f1044",
+      "sum": "TGgjbv8oGfmMNjfvcgxi2cX9RAJKGZnYGLEhzK2wNjM="
     },
     {
       "source": {
@@ -18,8 +18,8 @@
           "subdir": "production/ksonnet/promtail"
         }
       },
-      "version": "70900be57dd2e18a8c5e7d94dec5268fc607ccc7",
-      "sum": "MOoAhHzLkR7NSqD7ZVqjlcSDNRUz3fVgJQiYM1hd+us="
+      "version": "02540703c86afeca67d2533ee1fbb4a59d92fa44",
+      "sum": "GGqGW/FEidHXQ9Pv12a+LnIbJY+zNJuKUC+sMvuWi5U="
     },
     {
       "source": {
@@ -38,8 +38,8 @@
           "subdir": "environments/dev"
         }
       },
-      "version": "ec3acb865afc14a793e6a1651f3ac6404480a9d4",
-      "sum": "fI8Gv6V/PrnDsVIV5j+9W6DA5sIVvUrKThO9v1c9/rA=",
+      "version": "3ef8c277206bb0f28a6a7a1d23db2bf980662977",
+      "sum": "GG/EK9Y7utsiA8LXxAVa2Z+UvRPe7ulT8dLDNDB+c/k=",
       "name": "observatorium"
     }
   ],
