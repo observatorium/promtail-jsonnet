@@ -1,0 +1,29 @@
+jobs:
+  build:
+    docker:
+      - image: quay.io/coreos/jsonnet-ci
+    steps:
+      - checkout
+      - run: make fmt
+      - run: make environments/dev/manifests
+      - run: git diff --exit-code -- .
+
+  tests:
+    machine: true
+    steps:
+      - checkout
+      - run:
+          name: e2e tests
+          no_output_timeout: 30m
+          command : |
+            make environments/dev/manifests
+            make test-e2e
+      - store_artifacts:
+          path: /tmp/artifacts
+
+workflows:
+  version: 2
+  test-and-push:
+    jobs:
+      - build
+      - tests
