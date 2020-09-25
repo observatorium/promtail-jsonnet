@@ -1,3 +1,5 @@
+default: environments/dev/manifests
+
 TMP_DIR := $(shell pwd)/tmp
 BIN_DIR ?= $(TMP_DIR)/bin
 GOBIN ?= $(BIN_DIR)
@@ -5,8 +7,6 @@ GOBIN ?= $(BIN_DIR)
 include .bingo/Variables.mk
 
 SHELL=/usr/bin/env bash -o pipefail
-
-default: environments/dev/manifests
 
 vendor: $(JB)
 	$(JB) install
@@ -29,3 +29,6 @@ environments/dev/manifests: environments/dev/main.jsonnet vendor $(JSONNET_SRC) 
 
 dev-deploy: environments/dev/manifests
 	kubectl apply -n promtail -f environments/dev/manifests
+
+test-e2e: $(BIN_DIR) $(KIND)
+	@./e2e.sh

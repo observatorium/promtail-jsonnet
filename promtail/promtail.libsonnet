@@ -2,7 +2,7 @@ local config = import 'promtail/config.libsonnet';
 local scrape_config = import 'promtail/scrape_config.libsonnet';
 local k = (import 'ksonnet-util/kausal.libsonnet') + {
   _config+:: {
-    namespace: 'promtail',
+    namespace: 'observatorium',
   },
 };
 
@@ -11,7 +11,7 @@ local pt = config + scrape_config {
     curl: 'docker.io/curlimages/curl:7.70.0',
   },
   _config+:: {
-    namespace: 'promtail',
+    namespace: 'observatorium',
     tokenEndpoint: 'http://<token_endpoint>',
     username: 'username',
     password: 'password',
@@ -23,10 +23,23 @@ local pt = config + scrape_config {
           scheme:: 'http',
           // this isn't going to work because we need to go to the API
           hostname:: 'observatorium-xyz-loki-distributor-http.observatorium.svc.cluster.local:3100',
+          tenant_id: 'observatorium',
           external_labels: {},
         },
       ],
       container_root_path: '/var/lib/docker',
+    },
+
+    promtail_cluster_role_name: 'observatorium-promtail',
+    promtail_configmap_name: 'observatorium-promtail',
+    promtail_pod_name: 'observatorium-promtail',
+
+    commonLabels:: {
+      'app.kubernetes.io/name': 'observatorium-promtail',
+      'app.kubernetes.io/component': 'promtail',
+      'app.kubernetes.io/instance': 'observatorium',
+      'app.kubernetes.io/version': $._config.version,
+      'app.kubernetes.io/part-of': 'observatorium',
     },
   },
 
@@ -40,7 +53,13 @@ local pt = config + scrape_config {
       policyRule.withApiGroups(['']) +
       policyRule.withResources(['nodes', 'nodes/proxy', 'services', 'endpoints', 'pods']) +
       policyRule.withVerbs(['get', 'list', 'watch']),
-    ]),
+    ]) {
+      service_account+: {
+        metadata+: {
+          namespace: $._config.namespace,
+        },
+      },
+    },
 
   promtail_config+:: {
     local service_url(client) =
@@ -60,8 +79,10 @@ local pt = config + scrape_config {
 
   'observatorium-promtail-configmap':
     configMap.new($._config.promtail_configmap_name) +
+    configMap.mixin.metadata.withNamespace($._config.namespace) +
+    configMap.mixin.metadata.withLabels($._config.commonLabels) +
     configMap.withData({
-      'promtail.yml': k.util.manifestYaml($.promtail_config),
+      'promtail.yml': std.manifestYamlDoc($.promtail_config),
     }),
 
   promtail_args:: {
@@ -117,6 +138,8 @@ local pt = config + scrape_config {
 
   'observatorium-promtail-daemonset':
     daemonSet.new($._config.promtail_pod_name, [$.promtail_container]) +
+    daemonSet.mixin.metadata.withNamespace($._config.namespace) +
+    daemonSet.mixin.metadata.withLabels($._config.commonLabels) +
     daemonSet.mixin.spec.template.spec.withInitContainers($.init_container) +
     daemonSet.mixin.spec.template.spec.withServiceAccount($._config.promtail_cluster_role_name) +
     daemonSet.mixin.spec.template.spec.withServiceAccount($._config.promtail_cluster_role_name) +
