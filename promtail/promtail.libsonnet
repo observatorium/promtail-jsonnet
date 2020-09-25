@@ -1,32 +1,22 @@
 local config = import 'promtail/config.libsonnet';
 local scrape_config = import 'promtail/scrape_config.libsonnet';
-local k = (import 'ksonnet-util/kausal.libsonnet') + {
-  _config+:: {
-    namespace: 'observatorium',
-  },
-};
+local kausal = (import 'ksonnet-util/kausal.libsonnet');
 
-local pt = config + scrape_config {
+config + scrape_config {
   _images+:: {
     curl: 'docker.io/curlimages/curl:7.70.0',
+    promtail: 'grafana/promtail:%s' % $._config.version,
   },
+
   _config+:: {
-    namespace: 'observatorium',
-    tokenEndpoint: 'http://<token_endpoint>',
-    username: 'username',
-    password: 'password',
-    clientID: 'clientID',
-    clientSecret: 'clientSecret',
+    namespace: error 'Provide a namespace for promtail deployment',
+    tokenEndpoint: error 'Provide bearer token endpoint',
+    username: error 'Provide username for token point authentication',
+    password: error 'Provide password for token point authentication',
+    clientID: error 'Provide client id for token point authentication',
+    clientSecret: error 'Provide client secret for token point authentication',
     promtail_config+: {
-      clients: [
-        {
-          scheme:: 'http',
-          // this isn't going to work because we need to go to the API
-          hostname:: 'observatorium-xyz-loki-distributor-http.observatorium.svc.cluster.local:3100',
-          tenant_id: 'observatorium',
-          external_labels: {},
-        },
-      ],
+      clients: error 'Provide promtail client configurations',
       container_root_path: '/var/lib/docker',
     },
 
@@ -43,40 +33,59 @@ local pt = config + scrape_config {
     },
   },
 
+  local k = kausal {
+    _config+:: {
+      namespace: $._config.namespace,
+    },
+  },
+
   'observatorium-namespace':
     k.core.v1.namespace.new($._config.namespace),
 
+  'observatorium-promtail-serviceaccount':
+    k.core.v1.serviceAccount.new($._config.promtail_cluster_role_name) {
+      metadata+: {
+        namespace: $._config.namespace,
+      },
+    },
+
+  local clusterRole = k.rbac.v1.clusterRole,
   local policyRule = k.rbac.v1beta1.policyRule,
-  rbac::
-    k.util.rbac($._config.promtail_cluster_role_name, [
+  'observatorium-promtail-clusterrole':
+    clusterRole.new() +
+    clusterRole.mixin.metadata.withName($._config.promtail_cluster_role_name) +
+    clusterRole.withRules([
       policyRule.new() +
       policyRule.withApiGroups(['']) +
       policyRule.withResources(['nodes', 'nodes/proxy', 'services', 'endpoints', 'pods']) +
       policyRule.withVerbs(['get', 'list', 'watch']),
-    ]) {
-      service_account+: {
-        metadata+: {
-          namespace: $._config.namespace,
-        },
-      },
-    },
+    ]),
+
+  local clusterRoleBinding = k.rbac.v1.clusterRoleBinding,
+  local subject = k.rbac.v1beta1.subject,
+  'observatorium-promtail-clusterrolebinding':
+    clusterRoleBinding.new() +
+    clusterRoleBinding.mixin.metadata.withName($._config.promtail_cluster_role_name) +
+    clusterRoleBinding.mixin.roleRef.withApiGroup('rbac.authorization.k8s.io') +
+    clusterRoleBinding.mixin.roleRef.withKind('ClusterRole') +
+    clusterRoleBinding.mixin.roleRef.withName($._config.promtail_cluster_role_name) +
+    clusterRoleBinding.withSubjects([
+      subject.new() +
+      subject.withKind('ServiceAccount') +
+      subject.withName($._config.promtail_cluster_role_name) +
+      subject.withNamespace($._config.namespace),
+    ]),
 
   promtail_config+:: {
-    local service_url(client) =
-      if std.objectHasAll(client, 'username') then
-        '%(scheme)s://%(username)s:%(password)s@%(hostname)s/loki/api/v1/push' % client
-      else
-        '%(scheme)s://%(hostname)s/loki/api/v1/push' % client,
-
     local client_config(client) = client {
-      url: service_url(client),
+      url: '%(scheme)s://%(hostname)s/api/logs/v1/%(tenant_id)s/api/v1/push' % client,
+      bearer_token_file: '/var/shared/token',
     },
 
     clients: std.map(client_config, $._config.promtail_config.clients),
   },
 
   local configMap = k.core.v1.configMap,
-
   'observatorium-promtail-configmap':
     configMap.new($._config.promtail_configmap_name) +
     configMap.mixin.metadata.withNamespace($._config.namespace) +
@@ -84,10 +93,6 @@ local pt = config + scrape_config {
     configMap.withData({
       'promtail.yml': std.manifestYamlDoc($.promtail_config),
     }),
-
-  promtail_args:: {
-    'config.file': '/etc/promtail/promtail.yml',
-  },
 
   local container = k.core.v1.container,
   local volumeMount = {
@@ -99,7 +104,9 @@ local pt = config + scrape_config {
   promtail_container::
     container.new('promtail', $._images.promtail) +
     container.withPorts(k.core.v1.containerPort.new(name='http-metrics', port=80)) +
-    container.withArgsMixin(k.util.mapToFlags($.promtail_args)) +
+    container.withArgsMixin(k.util.mapToFlags({
+      'config.file': '/etc/promtail/promtail.yml',
+    })) +
     container.withEnv([
       container.envType.fromFieldPath('HOSTNAME', 'spec.nodeName'),
     ]) +
@@ -109,7 +116,6 @@ local pt = config + scrape_config {
     container.mixin.readinessProbe.withTimeoutSeconds(1) +
     container.withVolumeMounts(volumeMount),
 
-  local daemonSet = k.apps.v1.daemonSet,
   init_container::
     container.new('promtail-init', $._images.curl) +
     container.withVolumeMounts(volumeMount) +
@@ -136,6 +142,7 @@ local pt = config + scrape_config {
       ],
     ]),
 
+  local daemonSet = k.apps.v1.daemonSet,
   'observatorium-promtail-daemonset':
     daemonSet.new($._config.promtail_pod_name, [$.promtail_container]) +
     daemonSet.mixin.metadata.withNamespace($._config.namespace) +
@@ -144,15 +151,20 @@ local pt = config + scrape_config {
     daemonSet.mixin.spec.selector.withMatchLabels($._config.commonLabels) +
     daemonSet.mixin.spec.template.spec.withInitContainers($.init_container) +
     daemonSet.mixin.spec.template.spec.withServiceAccount($._config.promtail_cluster_role_name) +
-    daemonSet.mixin.spec.template.spec.withServiceAccount($._config.promtail_cluster_role_name) +
     daemonSet.mixin.spec.template.spec.withVolumes({ emptyDir: {}, name: 'shared' }) +
-    k.util.configVolumeMount($._config.promtail_configmap_name, '/etc/promtail') +
-    k.util.hostVolumeMount('varlog', '/var/log', '/var/log') +
-    k.util.hostVolumeMount('varlibdockercontainers', $._config.promtail_config.container_root_path + '/containers', $._config.promtail_config.container_root_path + '/containers', readOnly=true),
-};
-
-// rbac creates sub-documents so we need to flatten them
-pt + {
-  ['obseravtorium-rbac-' + f]: pt.rbac[f]
-  for f in std.objectFields(pt.rbac)
+    k.util.configVolumeMount(
+      $._config.promtail_configmap_name,
+      '/etc/promtail'
+    ) +
+    k.util.hostVolumeMount(
+      'varlog',
+      '/var/log',
+      '/var/log'
+    ) +
+    k.util.hostVolumeMount(
+      'varlibdockercontainers',
+      $._config.promtail_config.container_root_path + '/containers',
+      $._config.promtail_config.container_root_path + '/containers',
+      readOnly=true
+    ),
 }

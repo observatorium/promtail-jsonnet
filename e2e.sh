@@ -19,18 +19,26 @@ setup() {
 test_e2e(){
     $KUBECTL apply -f https://raw.githubusercontent.com/coreos/kube-prometheus/master/manifests/setup/prometheus-operator-0servicemonitorCustomResourceDefinition.yaml
     $KUBECTL apply -f https://raw.githubusercontent.com/coreos/kube-prometheus/master/manifests/setup/prometheus-operator-0prometheusruleCustomResourceDefinition.yaml
+
+    # Deploy dex
     $KUBECTL create ns dex || true
+    $KUBECTL apply -f ./vendor/observatorium/manifests/dex-secret.yaml
+    $KUBECTL apply -f ./vendor/observatorium/manifests/dex-pvc.yaml
+    $KUBECTL apply -f ./vendor/observatorium/manifests/dex-deployment.yaml
+    $KUBECTL apply -f ./vendor/observatorium/manifests/dex-service.yaml
+    $KUBECTL rollout status --timeout=10m -n dex deploy/dex || (must_gather "$ARTIFACT_DIR" && exit 1)
+
+    # Deploy observatorium
     $KUBECTL create ns observatorium-minio || true
     $KUBECTL create ns observatorium || true
     $KUBECTL apply -f ./vendor/observatorium/manifests
-
     $KUBECTL rollout status --timeout=10m -n observatorium-minio deploy/minio || (must_gather "$ARTIFACT_DIR" && exit 1)
     $KUBECTL rollout status --timeout=10m -n observatorium deploy/observatorium-xyz-loki-distributor || (must_gather "$ARTIFACT_DIR" && exit 1)
     $KUBECTL rollout status --timeout=10m -n observatorium statefulset/observatorium-xyz-loki-ingester || (must_gather "$ARTIFACT_DIR" && exit 1)
     $KUBECTL rollout status --timeout=10m -n observatorium statefulset/observatorium-xyz-loki-querier || (must_gather "$ARTIFACT_DIR" && exit 1)
 
+    # Deploy promtail
     $KUBECTL apply -f environments/dev/manifests
-
     $KUBECTL rollout status --timeout=10m -n observatorium daemonset/observatorium-promtail || (must_gather "$ARTIFACT_DIR" && exit 1)
 }
 
