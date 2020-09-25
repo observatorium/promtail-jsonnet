@@ -2,7 +2,7 @@ default: environments/dev/manifests
 
 TMP_DIR := $(shell pwd)/tmp
 BIN_DIR ?= $(TMP_DIR)/bin
-GOBIN ?= $(BIN_DIR)
+export GOBIN ?= $(BIN_DIR)
 
 include .bingo/Variables.mk
 
