@@ -30,7 +30,7 @@ local pt = config + scrape_config {
     },
   },
 
-  '01-namespace.json':
+  'observatorium-namespace':
     k.core.v1.namespace.new($._config.namespace),
 
   local policyRule = k.rbac.v1beta1.policyRule,
@@ -58,7 +58,7 @@ local pt = config + scrape_config {
 
   local configMap = k.core.v1.configMap,
 
-  '10-promtail_config_map.json':
+  'observatorium-promtail-configmap':
     configMap.new($._config.promtail_configmap_name) +
     configMap.withData({
       'promtail.yml': k.util.manifestYaml($.promtail_config),
@@ -115,7 +115,7 @@ local pt = config + scrape_config {
       ],
     ]),
 
-  '20-promtail_daemonset.json':
+  'observatorium-promtail-daemonset':
     daemonSet.new($._config.promtail_pod_name, [$.promtail_container]) +
     daemonSet.mixin.spec.template.spec.withInitContainers($.init_container) +
     daemonSet.mixin.spec.template.spec.withServiceAccount($._config.promtail_cluster_role_name) +
@@ -128,6 +128,6 @@ local pt = config + scrape_config {
 
 // rbac creates sub-documents so we need to flatten them
 pt + {
-  ['15-rbac_' + f + '.json']: pt.rbac[f]
+  ['obseravtorium-rbac-' + f]: pt.rbac[f]
   for f in std.objectFields(pt.rbac)
 }
