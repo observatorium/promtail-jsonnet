@@ -140,6 +140,8 @@ local pt = config + scrape_config {
     daemonSet.new($._config.promtail_pod_name, [$.promtail_container]) +
     daemonSet.mixin.metadata.withNamespace($._config.namespace) +
     daemonSet.mixin.metadata.withLabels($._config.commonLabels) +
+    daemonSet.mixin.spec.template.metadata.withLabels($._config.commonLabels) +
+    daemonSet.mixin.spec.selector.withMatchLabels($._config.commonLabels) +
     daemonSet.mixin.spec.template.spec.withInitContainers($.init_container) +
     daemonSet.mixin.spec.template.spec.withServiceAccount($._config.promtail_cluster_role_name) +
     daemonSet.mixin.spec.template.spec.withServiceAccount($._config.promtail_cluster_role_name) +
