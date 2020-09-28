@@ -54,7 +54,7 @@ local up =
         queries: [
           {
             name: 'obervatorium-test-tenant',
-            query: std.toString(defaultConfig.promtail.externalLabels),
+            query: '{observatorium="test"}',
           },
         ],
       },
