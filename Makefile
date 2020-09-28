@@ -1,4 +1,4 @@
-default: environments/dev/manifests
+default: environments/dev/manifests validate
 
 TMP_DIR := $(shell pwd)/tmp
 BIN_DIR ?= $(TMP_DIR)/bin
