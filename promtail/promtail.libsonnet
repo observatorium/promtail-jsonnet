@@ -1,5 +1,5 @@
-local config = import 'promtail/config.libsonnet';
-local scrape_config = import 'promtail/scrape_config.libsonnet';
+local config = (import 'promtail/config.libsonnet');
+local scrape_config = (import 'promtail/scrape_config.libsonnet');
 local kausal = (import 'ksonnet-util/kausal.libsonnet');
 
 config + scrape_config {
@@ -39,31 +39,34 @@ config + scrape_config {
     },
   },
 
-  'observatorium-namespace':
+  promtailNamespace::
     k.core.v1.namespace.new($._config.namespace),
 
-  'observatorium-promtail-serviceaccount':
+  promtailServiceAccount::
     k.core.v1.serviceAccount.new($._config.promtail_cluster_role_name) {
       metadata+: {
         namespace: $._config.namespace,
       },
     },
 
-  local clusterRole = k.rbac.v1.clusterRole,
-  local policyRule = k.rbac.v1beta1.policyRule,
-  'observatorium-promtail-clusterrole':
-    clusterRole.new() +
-    clusterRole.mixin.metadata.withName($._config.promtail_cluster_role_name) +
-    clusterRole.withRules([
+  defaultPolicyRules:
+    local policyRule = k.rbac.v1beta1.policyRule;
+    [
       policyRule.new() +
       policyRule.withApiGroups(['']) +
       policyRule.withResources(['nodes', 'nodes/proxy', 'services', 'endpoints', 'pods']) +
       policyRule.withVerbs(['get', 'list', 'watch']),
-    ]),
+    ],
 
-  local clusterRoleBinding = k.rbac.v1.clusterRoleBinding,
-  local subject = k.rbac.v1beta1.subject,
-  'observatorium-promtail-clusterrolebinding':
+  promtailClusterRole::
+    local clusterRole = k.rbac.v1.clusterRole;
+    clusterRole.new() +
+    clusterRole.mixin.metadata.withName($._config.promtail_cluster_role_name) +
+    clusterRole.withRules($.defaultPolicyRules),
+
+  promtailClusterRoleBinding::
+    local clusterRoleBinding = k.rbac.v1.clusterRoleBinding;
+    local subject = k.rbac.v1beta1.subject;
     clusterRoleBinding.new() +
     clusterRoleBinding.mixin.metadata.withName($._config.promtail_cluster_role_name) +
     clusterRoleBinding.mixin.roleRef.withApiGroup('rbac.authorization.k8s.io') +
@@ -85,8 +88,8 @@ config + scrape_config {
     clients: std.map(client_config, $._config.promtail_config.clients),
   },
 
-  local configMap = k.core.v1.configMap,
-  'observatorium-promtail-configmap':
+  promtailConfigMap::
+    local configMap = k.core.v1.configMap;
     configMap.new($._config.promtail_configmap_name) +
     configMap.mixin.metadata.withNamespace($._config.namespace) +
     configMap.mixin.metadata.withLabels($._config.commonLabels) +
@@ -101,7 +104,7 @@ config + scrape_config {
     readOnly: false,
   },
 
-  promtail_container::
+  promtailContainer::
     container.new('promtail', $._images.promtail) +
     container.withPorts(k.core.v1.containerPort.new(name='http-metrics', port=80)) +
     container.withArgsMixin(k.util.mapToFlags({
@@ -116,7 +119,7 @@ config + scrape_config {
     container.mixin.readinessProbe.withTimeoutSeconds(1) +
     container.withVolumeMounts(volumeMount),
 
-  init_container::
+  promtailInitContainer::
     container.new('promtail-init', $._images.curl) +
     container.withVolumeMounts(volumeMount) +
     container.withCommand([
@@ -142,14 +145,15 @@ config + scrape_config {
       ],
     ]),
 
-  local daemonSet = k.apps.v1.daemonSet,
-  'observatorium-promtail-daemonset':
-    daemonSet.new($._config.promtail_pod_name, [$.promtail_container]) +
+
+  promtailDaemonSet::
+    local daemonSet = k.apps.v1.daemonSet;
+    daemonSet.new($._config.promtail_pod_name, [$.promtailContainer]) +
     daemonSet.mixin.metadata.withNamespace($._config.namespace) +
     daemonSet.mixin.metadata.withLabels($._config.commonLabels) +
     daemonSet.mixin.spec.template.metadata.withLabels($._config.commonLabels) +
     daemonSet.mixin.spec.selector.withMatchLabels($._config.commonLabels) +
-    daemonSet.mixin.spec.template.spec.withInitContainers($.init_container) +
+    daemonSet.mixin.spec.template.spec.withInitContainers($.promtailInitContainer) +
     daemonSet.mixin.spec.template.spec.withServiceAccount($._config.promtail_cluster_role_name) +
     daemonSet.mixin.spec.template.spec.withVolumes({ emptyDir: {}, name: 'shared' }) +
     k.util.configVolumeMount(
@@ -167,4 +171,49 @@ config + scrape_config {
       $._config.promtail_config.container_root_path + '/containers',
       readOnly=true
     ),
+
+  withOpenShiftMixin:: {
+    local cfg = self,
+
+    promtailDaemonSet+:: {
+      spec+: {
+        template+: {
+          spec+: {
+            containers: [
+              c {
+                securityContext: {
+                  privileged: true,
+                },
+              }
+              for c in super.containers
+              if c.name == cfg.promtailContainer.name
+            ],
+          },
+        },
+      },
+    },
+
+    promtailClusterRole+::
+      local clusterRole = k.rbac.v1.clusterRole;
+      local policyRule = k.rbac.v1beta1.policyRule;
+      clusterRole.new() +
+      clusterRole.mixin.metadata.withName($._config.promtail_cluster_role_name) +
+      clusterRole.withRules(cfg.defaultPolicyRules + [
+        policyRule.new() +
+        policyRule.withApiGroups(['security.openshift.io']) +
+        policyRule.withResources(['securitycontextconstraints']) +
+        policyRule.withVerbs(['use']) {
+          resourceNames: ['hostmount-anyuid', 'privileged'],
+        },
+      ]),
+  },
+
+  manifests:: {
+    'observatorium-namespace': $.promtailNamespace,
+    'observatorium-promtail-serviceaccount': $.promtailServiceAccount,
+    'observatorium-promtail-clusterrole': $.promtailClusterRole,
+    'observatorium-promtail-clusterrolebinding': $.promtailClusterRoleBinding,
+    'observatorium-promtail-configmap': $.promtailConfigMap,
+    'observatorium-promtail-daemonset': $.promtailDaemonSet,
+  },
 }
