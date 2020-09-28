@@ -1,66 +1,89 @@
 local p = (import '../../promtail/promtail.libsonnet');
-local puj = (import '../../promtail/up-job.libsonnet');
+local upJob = (import '../../promtail/up-job.libsonnet');
 
-local dexCfg = {
-  tokenEndpoint: 'http://dex.dex.svc.cluster.local:5556/dex/token',
-  username: 'admin@example.com',
-  password: 'password',
-  clientID: 'test',
-  clientSecret: 'ZXhhbXBsZS1hcHAtc2VjcmV0',
+local defaultConfig = {
+  images:: {
+    curl: 'docker.io/curlimages/curl:7.72.0',
+  },
+  dex:: {
+    tokenEndpoint: 'http://dex.dex.svc.cluster.local:5556/dex/token',
+    username: 'admin@example.com',
+    password: 'password',
+    clientID: 'test',
+    clientSecret: 'ZXhhbXBsZS1hcHAtc2VjcmV0',
+  },
+  obs:: {
+    scheme: 'http',
+    hostname: 'observatorium-xyz-observatorium-api.%s.svc.cluster.local' % self.namespace,
+    port: 8080,
+    namespace: 'observatorium',
+    tenantId: 'test'
+  },
+  promtail:: {
+    externalLabels: {
+      observatorium: 'test',
+    },
+  },
 };
 
-local up = puj + puj.withResources {
-  config+: {
-    name: 'observatorium-up-logs',
-    version: 'master-2020-09-28-120d857',
-    image: 'quay.io/observatorium/up:' + self.version,
-    commonLabels+:: {
-      'app.kubernetes.io/instance': 'e2e-test',
-    },
-    backoffLimit: 5,
-    resources: {
-      limits: {
-        memory: '128Mi',
-        cpu: '500m',
+local up =
+  upJob +
+  upJob.withResources +
+  upJob.withGetToken {
+    config+: defaultConfig.images + defaultConfig.dex {
+      name: 'observatorium-up-logs',
+      version: 'master-2020-09-28-120d857',
+      image: 'quay.io/observatorium/up:' + self.version,
+      commonLabels+:: {
+        'app.kubernetes.io/instance': 'e2e-test',
       },
-    },
-    readEndpoint:: 'http://observatorium-xyz-observatorium-api.observatorium.svc.cluster.local:8080/api/logs/v1/test/api/v1/query',
-    querySpec: {
-      queries: [
-        {
-          name: 'obervatorium-test-tenant',
-          query: '{observatorium="test"}',
+      backoffLimit: 5,
+      resources: {
+        limits: {
+          memory: '128Mi',
+          cpu: '500m',
         },
+      },
+      readEndpoint:: '%s://%s:%d/api/logs/v1/%s/api/v1/query' % [
+        defaultConfig.obs.scheme,
+        defaultConfig.obs.hostname,
+        defaultConfig.obs.port,
+        defaultConfig.obs.tenantId,
       ],
-    },
-  },
-} + puj.withGetToken {
-  config+: dexCfg {
-    curlImage: 'docker.io/curlimages/curl',
-  },
-};
-
-local promtail =
-  p +
-  p.withOpenShiftMixin {
-    _config+:: dexCfg {
-      namespace: 'observatorium',
-      version: '1.6.1',
-      promtail_config+: {
-        clients: [
+      querySpec: {
+        queries: [
           {
-            local c = self,
-            scheme:: 'http',
-            hostname:: 'observatorium-xyz-observatorium-api.observatorium.svc.cluster.local:8080',
-            tenant_id:: 'test',
-            external_labels: {
-              observatorium: 'test',
-            },
+            name: 'obervatorium-test-tenant',
+            query: std.toString(defaultConfig.promtail.externalLabels),
           },
         ],
       },
     },
   };
 
-promtail.manifests +
+local pt =
+  p +
+  p.withOpenShiftMixin {
+    _images+:: defaultConfig.images,
+    _config+:: defaultConfig.dex {
+      namespace: defaultConfig.obs.namespace,
+      version: '1.6.1',
+      promtail_config+: {
+        clients: [
+          {
+            local c = self,
+            scheme:: defaultConfig.obs.scheme,
+            hostname:: '%s:%d' % [
+              defaultConfig.obs.hostname,
+              defaultConfig.obs.port,
+            ],
+            tenant_id:: defaultConfig.obs.tenantId,
+            external_labels: defaultConfig.promtail.externalLabels,
+          },
+        ],
+      },
+    },
+  };
+
+pt.manifests +
 up.manifests

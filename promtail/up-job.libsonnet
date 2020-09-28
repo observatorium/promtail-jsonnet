@@ -102,7 +102,7 @@ local k = import 'ksonnet.beta.4/k.libsonnet';
     local container = job.mixin.spec.template.spec.containersType,
     local u = self,
     config+:: {
-      curlImage: error 'must provide image for cURL',
+      curl: error 'must provide image for cURL',
       tokenEndpoint: error 'must provide token endpoint',
       username: error 'must provide username',
       password: error 'must provide password',
@@ -115,7 +115,7 @@ local k = import 'ksonnet.beta.4/k.libsonnet';
         template+: {
           spec+: {
             local c =
-              container.new('curl', u.config.curlImage) +
+              container.new('curl', u.config.curl) +
               container.withCommand([
                 '/bin/sh',
                 '-c',

@@ -4,7 +4,7 @@ local kausal = (import 'ksonnet-util/kausal.libsonnet');
 
 config + scrape_config {
   _images+:: {
-    curl: 'docker.io/curlimages/curl:7.70.0',
+    curl: error 'Provide curl image to access oauth token',
     promtail: 'grafana/promtail:%s' % $._config.version,
   },
 
