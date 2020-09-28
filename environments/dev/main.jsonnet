@@ -17,11 +17,11 @@ local defaultConfig = {
     hostname: 'observatorium-xyz-observatorium-api.%s.svc.cluster.local' % self.namespace,
     port: 8080,
     namespace: 'observatorium',
-    tenantId: 'test'
+    tenantId: 'test',
   },
   promtail:: {
     externalLabels: {
-      observatorium: 'test',
+      observatorium: 'e2e-test',
     },
   },
 };
@@ -53,8 +53,9 @@ local up =
       querySpec: {
         queries: [
           {
+            local labels = defaultConfig.promtail.externalLabels,
             name: 'obervatorium-test-tenant',
-            query: '{observatorium="test"}',
+            query: '{%s}' % std.join(',', ['%s="%s"' % [key, labels[key]] for key in std.objectFields(labels)]),
           },
         ],
       },
