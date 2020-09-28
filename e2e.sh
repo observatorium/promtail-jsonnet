@@ -38,8 +38,17 @@ test_e2e(){
     $KUBECTL rollout status --timeout=10m -n observatorium statefulset/observatorium-xyz-loki-querier || (must_gather "$ARTIFACT_DIR" && exit 1)
 
     # Deploy promtail
-    $KUBECTL apply -f environments/dev/manifests
+    $KUBECTL apply -f environments/dev/manifests/observatorium-promtail-serviceaccount.yaml
+    $KUBECTL apply -f environments/dev/manifests/observatorium-promtail-clusterrole.yaml
+    $KUBECTL apply -f environments/dev/manifests/observatorium-promtail-clusterrolebinding.yaml
+    $KUBECTL apply -f environments/dev/manifests/observatorium-promtail-configmap.yaml
+    $KUBECTL apply -f environments/dev/manifests/observatorium-promtail-daemonset.yaml
     $KUBECTL rollout status --timeout=10m -n observatorium daemonset/observatorium-promtail || (must_gather "$ARTIFACT_DIR" && exit 1)
+
+    # Deploy up-job
+    $KUBECTL apply -f environments/dev/manifests/observatorium-up-logs-configmap.yaml
+    $KUBECTL apply -f environments/dev/manifests/observatorium-up-logs.yaml
+    $KUBECTL wait --for=condition=complete --timeout=5m -n default job/observatorium-up-logs || (must_gather "$ARTIFACT_DIR" && exit 1)
 }
 
 tear_down(){
@@ -71,6 +80,7 @@ must_gather() {
     $KUBECTL get pods --all-namespaces > "$artifact_dir/pods"
     $KUBECTL get daemonset --all-namespaces > "$artifact_dir/daemonsets"
     $KUBECTL get deploy --all-namespaces > "$artifact_dir/deployments"
+    $KUBECTL get job --all-namespaces > "$artifact_dir/jobs"
     $KUBECTL get statefulset --all-namespaces > "$artifact_dir/statefulsets"
     $KUBECTL get services --all-namespaces > "$artifact_dir/services"
     $KUBECTL get endpoints --all-namespaces > "$artifact_dir/endpoints"
