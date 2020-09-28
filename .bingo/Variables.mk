@@ -52,3 +52,9 @@ $(KIND): .bingo/kind.mod
 	@echo "(re)installing $(GOBIN)/kind-v0.9.0"
 	@cd .bingo && $(GO) build -mod=mod -modfile=kind.mod -o=$(GOBIN)/kind-v0.9.0 "sigs.k8s.io/kind"
 
+KUBEVAL := $(GOBIN)/kubeval-v0.0.0-20200414082145-45825b7caab9
+$(KUBEVAL): .bingo/kubeval.mod
+	@# Install binary/ries using Go 1.14+ build command. This is using bwplotka/bingo-controlled, separate go module with pinned dependencies.
+	@echo "(re)installing $(GOBIN)/kubeval-v0.0.0-20200414082145-45825b7caab9"
+	@cd .bingo && $(GO) build -mod=mod -modfile=kubeval.mod -o=$(GOBIN)/kubeval-v0.0.0-20200414082145-45825b7caab9 "github.com/instrumenta/kubeval"
+

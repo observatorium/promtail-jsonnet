@@ -7,6 +7,7 @@ jobs:
       - run: make fmt
       - run: make environments/dev/manifests
       - run: git diff --exit-code -- .
+      - run: make validate
 
   tests:
     machine:

@@ -27,6 +27,9 @@ environments/dev/manifests: environments/dev/main.jsonnet vendor $(JSONNET_SRC) 
 	$(JSONNET) -J vendor -J lib -m environments/dev/manifests environments/dev/main.jsonnet  | xargs -I{} sh -c 'cat {} | $(GOJSONTOYAML) > {}.yaml' -- {}
 	find environments/dev/manifests -type f ! -name '*.yaml' -delete
 
+validate: $(KUBEVAL) environments/dev/manifests
+	$(KUBEVAL) environments/dev/manifests/*
+
 dev-deploy: environments/dev/manifests
 	kubectl apply -n promtail -f environments/dev/manifests
 
