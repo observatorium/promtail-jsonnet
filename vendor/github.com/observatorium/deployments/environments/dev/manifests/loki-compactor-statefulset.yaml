@@ -1,33 +1,34 @@
 apiVersion: apps/v1
-kind: Deployment
+kind: StatefulSet
 metadata:
   labels:
-    app.kubernetes.io/component: table-manager
+    app.kubernetes.io/component: compactor
     app.kubernetes.io/instance: observatorium-xyz
     app.kubernetes.io/name: loki
     app.kubernetes.io/part-of: observatorium
-    app.kubernetes.io/version: 1.6.1
-  name: observatorium-xyz-loki-table-manager
+    app.kubernetes.io/version: 2.0.0
+  name: observatorium-xyz-loki-compactor
   namespace: observatorium
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app.kubernetes.io/component: table-manager
+      app.kubernetes.io/component: compactor
       app.kubernetes.io/instance: observatorium-xyz
       app.kubernetes.io/name: loki
       app.kubernetes.io/part-of: observatorium
+  serviceName: observatorium-xyz-loki-compactor-grpc
   template:
     metadata:
       labels:
-        app.kubernetes.io/component: table-manager
+        app.kubernetes.io/component: compactor
         app.kubernetes.io/instance: observatorium-xyz
         app.kubernetes.io/name: loki
         app.kubernetes.io/part-of: observatorium
     spec:
       containers:
       - args:
-        - -target=table-manager
+        - -target=compactor
         - -config.file=/etc/loki/config/config.yaml
         - -limits.per-user-override-config=/etc/loki/config/overrides.yaml
         - -log.level=error
@@ -39,8 +40,8 @@ spec:
             secretKeyRef:
               key: endpoint
               name: loki-objectstorage
-        image: docker.io/grafana/loki:1.6.1
-        name: observatorium-xyz-loki-table-manager
+        image: docker.io/grafana/loki:2.0.0
+        name: observatorium-xyz-loki-compactor
         ports:
         - containerPort: 3100
           name: metrics
@@ -55,10 +56,10 @@ spec:
           timeoutSeconds: 1
         resources:
           limits:
-            cpu: 100m
+            cpu: 200m
             memory: 200Mi
           requests:
-            cpu: 50m
+            cpu: 100m
             memory: 100Mi
         volumeMounts:
         - mountPath: /etc/loki/config/
@@ -71,5 +72,16 @@ spec:
       - configMap:
           name: observatorium-xyz-loki
         name: config
-      - emptyDir: {}
-        name: storage
+  volumeClaimTemplates:
+  - metadata:
+      labels:
+        app.kubernetes.io/instance: observatorium-xyz
+        app.kubernetes.io/name: loki
+        app.kubernetes.io/part-of: observatorium
+      name: storage
+    spec:
+      accessModes:
+      - ReadWriteOnce
+      resources:
+        requests:
+          storage: 250Mi

@@ -44,7 +44,7 @@ local up =
           cpu: '500m',
         },
       },
-      readEndpoint:: '%s://%s:%d/api/logs/v1/%s/api/v1/query' % [
+      readEndpoint:: '%s://%s:%d/api/logs/v1/%s/loki/api/v1/query' % [
         defaultConfig.obs.scheme,
         defaultConfig.obs.hostname,
         defaultConfig.obs.port,

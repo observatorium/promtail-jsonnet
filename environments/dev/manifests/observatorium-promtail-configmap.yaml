@@ -4,8 +4,8 @@ data:
     "clients":
     - "bearer_token_file": "/var/shared/token"
       "external_labels":
-        "observatorium": "test"
-      "url": "http://observatorium-xyz-observatorium-api.observatorium.svc.cluster.local:8080/api/logs/v1/test/api/v1/push"
+        "observatorium": "e2e-test"
+      "url": "http://observatorium-xyz-observatorium-api.observatorium.svc.cluster.local:8080/api/logs/v1/test/loki/api/v1/push"
     "scrape_configs":
     - "job_name": "kubernetes-pods-name"
       "kubernetes_sd_configs":
