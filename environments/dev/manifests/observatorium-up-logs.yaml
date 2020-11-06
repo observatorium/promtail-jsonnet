@@ -15,7 +15,7 @@ spec:
       containers:
       - args:
         - --endpoint-type=logs
-        - --endpoint-read=http://observatorium-xyz-observatorium-api.observatorium.svc.cluster.local:8080/api/logs/v1/test/api/v1/query
+        - --endpoint-read=http://observatorium-xyz-observatorium-api.observatorium.svc.cluster.local:8080/api/logs/v1/test/loki/api/v1/query
         - --queries-file=/var/up/queries.yaml
         - --period=1s
         - --duration=2m

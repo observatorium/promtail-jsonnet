@@ -81,7 +81,7 @@ config + scrape_config {
 
   promtail_config+:: {
     local client_config(client) = client {
-      url: '%(scheme)s://%(hostname)s/api/logs/v1/%(tenant_id)s/api/v1/push' % client,
+      url: '%(scheme)s://%(hostname)s/api/logs/v1/%(tenant_id)s/loki/api/v1/push' % client,
       bearer_token_file: '/var/shared/token',
     },
 

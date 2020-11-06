@@ -3,7 +3,7 @@ data:
   queries.yaml: |-
     "queries":
     - "name": "obervatorium-test-tenant"
-      "query": "{observatorium=\"test\"}"
+      "query": "{observatorium=\"e2e-test\"}"
 kind: ConfigMap
 metadata:
   labels:
